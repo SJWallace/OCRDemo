@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  home-ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: home-ocr
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    # Uncomment if you want live code reload while developing
+    # volumes:
+    #   - ./app:/app/app:ro

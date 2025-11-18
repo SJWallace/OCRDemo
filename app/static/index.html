@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Handwriting OCR</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 40px;
+            max-width: 800px;
+        }
+
+        #dropzone {
+            border: 2px dashed #888;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        #dropzone.dragover {
+            border-color: #4CAF50;
+            background: #f7fff7;
+        }
+
+        pre {
+            background: #eee;
+            padding: 20px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Handwriting OCR</h1>
+
+<label for="engineSelect"><strong>Choose OCR Engine:</strong></label>
+<select id="engineSelect">
+    <option value="simple">Simple OCR (EasyOCR)</option>
+    <option value="advanced">Advanced Handwriting OCR (TrOCR)</option>
+</select>
+
+<div id="dropzone">
+    <p><strong>Drag & Drop a file</strong> or click to select.</p>
+    <input type="file" id="fileInput" hidden>
+</div>
+
+<h2>Results</h2>
+<pre id="output">No file processed yet.</pre>
+
+<script>
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const output = document.getElementById("output");
+    const engineSelect = document.getElementById("engineSelect");
+
+    // ----- Drag/drop styling -----
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", e => {
+        e.preventDefault();
+        dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", e => {
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+
+    // ----- Core File Handler -----
+    async function handleFile(file) {
+        output.textContent = `Processing "${file.name}"...\n`;
+
+        // Select API based on dropdown
+        const selected = engineSelect.value;
+        const endpoint =
+            selected === "advanced" ? "/api/ocr_advanced" : "/api/ocr";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch(endpoint, {
+                method: "POST",
+                body: formData
+            });
+
+            if (!res.ok) {
+                const errText = await res.text();
+                output.textContent = `❌ Server error:\n${errText}`;
+                return;
+            }
+
+            const result = await res.json();
+            output.textContent = JSON.stringify(result, null, 2);
+
+        } catch (err) {
+            output.textContent = `❌ Error: ${err}`;
+        }
+    }
+</script>
+
+</body>
+</html>

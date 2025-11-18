@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+
+numpy==1.26.4        # <— critical: pin to 1.26.x
+pillow
+pdf2image
+opencv-python
+
+easyocr
+python-multipart
+
+transformers==4.43.3
+torch==2.2.2         # good CPU version for 3.10 & numpy 1.26.x
+sentencepiece
