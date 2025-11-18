@@ -1,14 +1,39 @@
-version: "3.9"
 
 services:
-  home-ocr:
+  ocr:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: home-ocr
-    ports:
-      - "8000:8000"
+      dockerfile: Dockerfile       # <-- change to your built image if needed
+    container_name: ocr
     restart: unless-stopped
-    # Uncomment if you want live code reload while developing
-    # volumes:
-    #   - ./app:/app/app:ro
+    networks:
+      - homeserver
+    # Uncomment while debugging if you want direct access on the host:
+    # ports:
+    #   - "8000:8000"
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=homeserver
+
+      # ---------- HTTP → HTTPS redirect ----------
+      - traefik.http.routers.ocr-http.rule=Host(`ocr.samwallace.me`)
+      - traefik.http.routers.ocr-http.entrypoints=web
+      - traefik.http.routers.ocr-http.middlewares=redirect-to-https
+
+      # ---------- HTTPS router ----------
+      - traefik.http.routers.ocr.rule=Host(`ocr.samwallace.me`)
+      - traefik.http.routers.ocr.entrypoints=websecure
+      - traefik.http.routers.ocr.tls=true
+      - traefik.http.routers.ocr.tls.certresolver=cloudflare
+
+      # Protect with Authentik, same middleware you already defined on traefik
+      - traefik.http.routers.ocr.middlewares=ak-forwardauth@docker
+
+      # ---------- Backend service ----------
+      - traefik.http.routers.ocr.service=ocr-svc
+      - traefik.http.services.ocr-svc.loadbalancer.server.port=8000
+
+networks:
+  homeserver:
+    external: true
